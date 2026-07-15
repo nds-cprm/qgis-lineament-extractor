@@ -3,8 +3,12 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from sklearn.metrics import accuracy_score
+
 import matplotlib.pyplot as plt
 import numpy as np
+
+from .device import identify_device
+
 
 def random_sample(img, msk, size):
     rows, cols, _ = img.shape
@@ -172,15 +176,18 @@ def iou_score(outputs, targets, smooth=1e-5):
 
 iou_score
     
-def train_and_validate(model, train_dataloader, val_dataloader, num_epochs, criterion, optimizer):
+def train_and_validate(model, train_dataloader, val_dataloader, num_epochs, criterion, optimizer, device=None):    
+    if not device:
+        device = identify_device()
     
     train_loss_series = []
     val_loss_series = []
     val_iou_series = []
     val_accuracy_series = []
     
-    start = torch.cuda.Event(enable_timing=True)
-    end = torch.cuda.Event(enable_timing=True)
+    tensor_type = getattr(torch, device.type)
+    start = tensor_type.Event(enable_timing=True)
+    end = tensor_type.Event(enable_timing=True)
     start.record()
 
     for epoch in range(num_epochs):
@@ -193,10 +200,10 @@ def train_and_validate(model, train_dataloader, val_dataloader, num_epochs, crit
         model.train()
         for images, masks in train_dataloader:
 
-            images = images.float().to('cuda')
-            masks = masks.float().to('cuda')
+            images = images.float().to(device.type)
+            masks = masks.float().to(device.type)
             # Forward pass
-            outputs = model(images).to('cuda') 
+            outputs = model(images).to(device.type) 
             # Compute loss using Dice Loss
             loss = criterion(outputs, masks)
 
@@ -210,10 +217,10 @@ def train_and_validate(model, train_dataloader, val_dataloader, num_epochs, crit
         model.eval()
         with torch.no_grad():
             for images, masks in val_dataloader:
-                images = images.float().to('cuda')
-                masks = masks.float().to('cuda')
+                images = images.float().to(device.type)
+                masks = masks.float().to(device.type)
                 # Forward pass
-                outputs = model(images).to('cuda')
+                outputs = model(images).to(device.type)
 
                 # Compute loss using Dice Loss
                 loss = criterion(outputs, masks)
@@ -268,10 +275,13 @@ def view_metrics(train_loss, val_loss, val_iou, val_accuracy):
     ax[1].plot(val_accuracy, label='val acc')
     ax[1].legend()
 
-def predict(image, model, tile_size=128, stride=32):
+def predict(image, model, tile_size=128, stride=32, device=None):
+    if not device:
+        device = identify_device()
+
     rows, cols, channels = image.shape
     image_out = np.zeros((rows, cols), dtype=float)
-    image = torch.Tensor(image).float().cuda()
+    image = torch.Tensor(image).float().to(device.type)
     
     #transform = transforms.Compose([MinMaxScaler()])
     

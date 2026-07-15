@@ -85,7 +85,7 @@ class ApplyModel(BaseAlgorithm):
             QgsProcessingParameterFile(
                 self.MODEL_INPUT,
                 self.tr('Input model file'),
-                defaultValue=Path(__file__).resolve().parent.joinpath("rossi_et_al_2025.pth").as_posix(),
+                defaultValue=Path(__file__).resolve().parent.parent.joinpath("models/rossi_et_al_2025.pth").as_posix(),
                 # extension=".pth"
             )
         )
@@ -114,9 +114,14 @@ class ApplyModel(BaseAlgorithm):
         import torch
         import numpy
         from osgeo import gdal
-        from qgis import processing
+        # from qgis import processing
 
+        from .device import identify_device, get_device_details
         from .lib import predict
+
+        # device selection
+        device = identify_device()
+        feedback.pushInfo(f'Device auto-selected: {get_device_details(device)}')
 
         dem_input = self.parameterAsRasterLayer(parameters, self.DEM_INPUT, context)
         model_input = self.parameterAsFile(parameters, self.MODEL_INPUT, context)
@@ -132,14 +137,14 @@ class ApplyModel(BaseAlgorithm):
         dem_ds = gdal.Open(dem_input.dataProvider().dataSourceUri())
         in_dem = dem_ds.GetRasterBand(1).ReadAsArray()
 
-        feedback.pushInfo(f'Raster lido com sucesso: {in_dem.shape}')
+        feedback.pushInfo(f'Raster read with success: {in_dem.shape}')        
 
         in_dem = (in_dem - in_dem.min()) / (in_dem.max() - in_dem.min())
         in_dem = in_dem[:,:, numpy.newaxis]
 
         # Predict and save
         model = torch.load(model_input, weights_only=False)
-        pred = predict(in_dem, model, tile_size=128, stride=32)
+        pred = predict(in_dem, model, tile_size=128, stride=32, device=device)
 
         out_driver = gdal.GetDriverByName('GTiff')
         dst_ds = out_driver.CreateCopy(out_raster, dem_ds, strict=0) #, options=["COMPRESS=LZW"])

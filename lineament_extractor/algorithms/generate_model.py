@@ -36,6 +36,7 @@ from qgis.core import (QgsProcessingException,
 
 from . import lib
 from . import BaseAlgorithm
+from .device import get_device_details, identify_device
 
 
 class GenerateModel(BaseAlgorithm):
@@ -216,7 +217,7 @@ class GenerateModel(BaseAlgorithm):
         dem_ds = gdal.Open(raster_layer.dataProvider().dataSourceUri())
         in_dem = dem_ds.GetRasterBand(1).ReadAsArray()
 
-        feedback.pushInfo(f'Raster lido com sucesso: {in_dem.shape}')
+        feedback.pushInfo(f'Raster read successfully: {in_dem.shape}')
 
         # Normalize 
         in_dem = (in_dem - in_dem.min()) / (in_dem.max() - in_dem.min())
@@ -250,6 +251,10 @@ class GenerateModel(BaseAlgorithm):
         # Visualização de exemplos:
         # lib.view_random_sample(in_dem, in_sample, size=128)
 
+        # device selection
+        device = identify_device()
+        feedback.pushInfo(f'Device auto-selected: {get_device_details(device)}')
+
         # Model parameters
         batch_size = self.parameterAsInt(parameters, self.BATCH_SIZE, context)
         tile_size = self.parameterAsInt(parameters, self.TILE_SIZE, context)
@@ -265,8 +270,8 @@ class GenerateModel(BaseAlgorithm):
         train_dataloader = lib.load_examples(in_dem[:,:], in_sample[:,:], tile_size=tile_size, stride=8, batch_size=batch_size, shuffle=True)
         val_dataloader = lib.load_examples(in_dem[:,8:], in_sample[:,8:], tile_size=tile_size, stride=11, batch_size=batch_size, shuffle=True)
 
-        feedback.pushInfo(f'Tamanho do conjunto de treinamento: {len(train_dataloader.dataset)}')
-        feedback.pushInfo(f'Tamanho do conjunto de validação: {len(val_dataloader.dataset)}')
+        feedback.pushInfo(f'Training dataset size: {len(train_dataloader.dataset)}')
+        feedback.pushInfo(f'Vaidation dataset size: {len(val_dataloader.dataset)}')
         
         # Modelo U-Net
         model = lib.UNet(
@@ -304,7 +309,7 @@ class GenerateModel(BaseAlgorithm):
         out_model = output_path.joinpath(f"{model_name}.pth")
         torch.save(model, out_model)
             
-        feedback.pushInfo(f'Arquivo gravado com sucesso em: {out_model.as_posix()}')
+        feedback.pushInfo(f'File saved successfully in: {out_model.as_posix()}')
         
         # Retorna o dicionário exigido pelo QGIS Processing
         return {self.OUTPUT_DIR: output_path}
