@@ -34,7 +34,6 @@ from qgis.core import (QgsProcessingException,
                        QgsProcessingParameterRasterLayer,
                        QgsProcessingParameterFolderDestination)
 
-from . import lib
 from . import BaseAlgorithm
 from .device import get_device_details, identify_device
 
@@ -200,6 +199,8 @@ class GenerateModel(BaseAlgorithm):
 
         from pathlib import Path
 
+        from . import lib
+
         # Trabalha o DEM
         raster_layer = self.parameterAsRasterLayer(
             parameters,
@@ -279,7 +280,7 @@ class GenerateModel(BaseAlgorithm):
             out_channels=1, 
             depth=depth, 
             first_hidden_channels=first_hidden_channels
-        ).to('cuda')
+        ).to(device.type)
 
         feedback.pushInfo(f'U-Net Model: {str(model)}')
 
