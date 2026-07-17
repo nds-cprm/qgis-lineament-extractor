@@ -174,7 +174,7 @@ def iou_score(outputs, targets, smooth=1e-5):
     iou = (intersection + smooth) / (union + smooth)
     return iou
 
-iou_score
+# iou_score
     
 def train_and_validate(model, train_dataloader, val_dataloader, num_epochs, criterion, optimizer, device=None):    
     if not device:
@@ -185,10 +185,10 @@ def train_and_validate(model, train_dataloader, val_dataloader, num_epochs, crit
     val_iou_series = []
     val_accuracy_series = []
     
-    tensor_type = getattr(torch, device.type)
-    start = tensor_type.Event(enable_timing=True)
-    end = tensor_type.Event(enable_timing=True)
-    start.record()
+    # tensor_type = getattr(torch, device.type)
+    # start = tensor_type.Event(enable_timing=True)
+    # end = tensor_type.Event(enable_timing=True)
+    # start.record()
 
     for epoch in range(num_epochs):
         train_loss = 0.0
@@ -254,13 +254,13 @@ def train_and_validate(model, train_dataloader, val_dataloader, num_epochs, crit
         print(f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val IoU: {val_iou:.4f} | Val Accuracy: {val_accuracy:.4f}")
         print()
         
-    end.record()
-    s = start.elapsed_time(end) / 1000
-    h = int(s // 3600)
-    s %= 3600
-    m = int(s // 60)
-    s %= 60
-    print(f'elapsed time: {h}h, {m}m, {s:.2f}s')
+    # end.record()
+    # s = start.elapsed_time(end) / 1000
+    # h = int(s // 3600)
+    # s %= 3600
+    # m = int(s // 60)
+    # s %= 60
+    # print(f'elapsed time: {h}h, {m}m, {s:.2f}s')
     
     return train_loss_series, val_loss_series, val_iou_series, val_accuracy_series
 
