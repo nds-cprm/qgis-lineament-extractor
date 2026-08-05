@@ -143,7 +143,7 @@ class ApplyModel(BaseAlgorithm):
         in_dem = in_dem[:,:, numpy.newaxis]
 
         # Predict and save
-        model = torch.load(model_input, weights_only=False)
+        model = torch.load(model_input, map_location=device, weights_only=False)
         pred = predict(in_dem, model, tile_size=128, stride=32, device=device)
 
         out_driver = gdal.GetDriverByName('GTiff')
